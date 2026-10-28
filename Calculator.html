@@ -1,225 +1,447 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Calculator</title>
-  <style>
-
-    /* ── STEP 1: Reset & page centering ─────────────────── */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      background: #0f0f1a;   /* deep navy page background */
-    }
-
-    /* ── STEP 2: Calculator shell ────────────────────────── */
-    .calc {
-      width: 300px;
-      background: #1e1e2e;   /* dark purple shell */
-      border-radius: 20px;
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    /* ── STEP 3: Display screen ──────────────────────────── */
-    .display {
-      background: #13131f;   /* darker inner screen */
-      border-radius: 14px;
-      padding: 1rem 1.25rem;
-      min-height: 96px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;       /* right-align like a real calc */
-      justify-content: flex-end;
-      gap: 4px;
-    }
-    .expr {                        /* small top line: "12 + 5 =" */
-      font-size: 13px;
-      color: #6c6c8a;
-      font-family: monospace;
-      min-height: 18px;
-      text-align: right;
-    }
-    .num {                         /* large main number */
-      font-size: 38px;
-      font-weight: 500;
-      color: #e0e0ff;
-      font-family: monospace;
-    }
-
-    /* ── STEP 4: Button grid ─────────────────────────────── */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);  /* 4 equal columns */
-      gap: 8px;
-    }
-
-    /* ── STEP 5: Base button style ───────────────────────── */
-    .btn {
-      height: 60px;
-      border: none;
-      border-radius: 14px;
-      font-size: 19px;
-      font-weight: 500;
-      cursor: pointer;
-      color: #fff;
-      font-family: monospace;
-      transition: transform 0.08s, filter 0.1s;
-    }
-    .btn:active {
-      transform: scale(0.92);        /* shrink on press = tactile feel */
-      filter: brightness(1.15);
-    }
-
-    /* ── STEP 6: Color roles ─────────────────────────────── */
-    .btn.num-btn { background: #2e2e4e; color: #c8c8f0; }  /* digits — indigo */
-    .btn.op      { background: #7c3aed; color: #f0e8ff; }  /* operators — violet */
-    .btn.fn      { background: #0e7490; color: #e0f7fa; }  /* functions — teal */
-    .btn.clr     { background: #be123c; color: #ffe4ec; }  /* clear — red */
-    .btn.eq      { background: #16a34a; color: #e8fff0; }  /* equals — green */
-
-    /* ── STEP 7: Zero spans 2 columns ───────────────────── */
-    .btn.zero { grid-column: span 2; }
-
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculator</title>
+<style>
+:root{
+  --bg:#eceef6;--shell:#fff;--screen:#f1f2fa;--txt:#1b1b2f;--dim:#65658a;
+  --num-bg:#e4e6f4;--num-fg:#27274a;--op-bg:#6d28d9;--op-fg:#fff;
+  --fn-bg:#0e7490;--fn-fg:#fff;--clr-bg:#be123c;--clr-fg:#fff;--eq-bg:#15803d;--eq-fg:#fff;
+  --mem-bg:#d9dcee;--mem-fg:#43436a;--err:#be123c;--line:#d5d8ea;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f0f1a;--shell:#1e1e2e;--screen:#13131f;--txt:#e0e0ff;--dim:#8d8dae;
+    --num-bg:#2e2e4e;--num-fg:#c8c8f0;--op-bg:#7c3aed;--fn-bg:#0e7490;
+    --mem-bg:#27273f;--mem-fg:#a0a0c8;--err:#ff7b98;--line:#33334f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f0f1a;--shell:#1e1e2e;--screen:#13131f;--txt:#e0e0ff;--dim:#8d8dae;
+  --num-bg:#2e2e4e;--num-fg:#c8c8f0;--op-bg:#7c3aed;--fn-bg:#0e7490;
+  --mem-bg:#27273f;--mem-fg:#a0a0c8;--err:#ff7b98;--line:#33334f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--txt);display:flex;justify-content:center;align-items:center;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:12px;overflow:auto}
+.calc{width:100%;max-width:380px;background:var(--shell);border-radius:22px;padding:14px;
+  display:flex;flex-direction:column;gap:10px;margin:auto}
+.bar{display:flex;gap:6px;align-items:center}
+.bar .sp{flex:1}
+.chip{border:1px solid var(--line);background:transparent;color:var(--dim);border-radius:999px;
+  padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--op-bg);border-color:var(--op-bg);color:var(--op-fg)}
+.chip:focus-visible,.btn:focus-visible{outline:2px solid var(--op-bg);outline-offset:2px}
+.mind{font-size:13px;color:var(--fn-bg);font-weight:600;min-width:16px}
+.display{background:var(--screen);border-radius:16px;padding:12px 16px;min-height:112px;
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;gap:4px;overflow:hidden}
+.expr{width:100%;text-align:right;font:15px ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--dim);
+  min-height:22px;white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.expr::-webkit-scrollbar{display:none}
+.res{width:100%;text-align:right;font:500 40px ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  white-space:nowrap;overflow:hidden;cursor:pointer;background:none;border:0;color:var(--txt)}
+.res.pre{color:var(--dim)}
+.res.err{color:var(--err);font-size:18px;font-family:system-ui,sans-serif;white-space:normal}
+.keys{position:relative;display:flex;flex-direction:column;gap:8px}
+.grid{display:grid;gap:8px}
+.g4{grid-template-columns:repeat(4,1fr)}
+.g5{grid-template-columns:repeat(5,1fr)}
+.btn{height:54px;border:0;border-radius:14px;font:500 19px ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  cursor:pointer;transition:transform .08s,filter .1s;background:var(--num-bg);color:var(--num-fg)}
+.btn:active{transform:scale(.93);filter:brightness(1.15)}
+.btn.o{background:var(--op-bg);color:var(--op-fg)}
+.btn.f{background:var(--fn-bg);color:var(--fn-fg)}
+.btn.c{background:var(--clr-bg);color:var(--clr-fg)}
+.btn.e{background:var(--eq-bg);color:var(--eq-fg);grid-column:span 3}
+.btn.m{height:36px;font-size:14px;background:var(--mem-bg);color:var(--mem-fg);border-radius:10px}
+.sci .btn{height:44px;font-size:15px;background:var(--fn-bg);color:var(--fn-fg)}
+.sci .btn.o{background:var(--op-bg)}
+.sci[hidden],.hist[hidden]{display:none}
+.hist{position:absolute;inset:0;background:var(--shell);display:flex;flex-direction:column;gap:6px;z-index:2}
+.hist ul{list-style:none;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px}
+.hist li button{width:100%;text-align:right;background:var(--screen);border:0;border-radius:12px;
+  padding:8px 12px;color:var(--txt);cursor:pointer;font:inherit}
+.hist li small{display:block;color:var(--dim);font:13px ui-monospace,Menlo,Consolas,monospace}
+.hist li b{font:500 18px ui-monospace,Menlo,Consolas,monospace}
+.hist .empty{color:var(--dim);text-align:center;padding:40px 10px}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+</style>
 </head>
 <body>
-
-<!-- ── STEP 8: HTML structure ──────────────────────────── -->
 <div class="calc">
-  <div class="display">
-    <div class="expr" id="expr"></div>   <!-- e.g. "8 × 5 =" -->
-    <div class="num"  id="disp">0</div> <!-- current number -->
+  <div class="bar">
+    <span class="mind" id="mind" title="Value stored in memory"></span>
+    <button class="chip" id="deg" aria-pressed="true" title="Angle mode">DEG</button>
+    <button class="chip" id="sci" aria-pressed="false">Scientific</button>
+    <span class="sp"></span>
+    <button class="chip" id="hbtn" aria-pressed="false">History</button>
+    <button class="chip" id="theme" aria-label="Toggle theme">Theme</button>
   </div>
-
-  <div class="grid">
-    <!-- Row 1: utility functions -->
-    <button class="btn clr" data-a="clear">AC</button>
-    <button class="btn fn"  data-a="sign">+/−</button>
-    <button class="btn fn"  data-a="pct">%</button>
-    <button class="btn op"  data-a="op" data-o="÷">÷</button>
-
-    <!-- Row 2 -->
-    <button class="btn num-btn" data-a="d" data-v="7">7</button>
-    <button class="btn num-btn" data-a="d" data-v="8">8</button>
-    <button class="btn num-btn" data-a="d" data-v="9">9</button>
-    <button class="btn op"      data-a="op" data-o="×">×</button>
-
-    <!-- Row 3 -->
-    <button class="btn num-btn" data-a="d" data-v="4">4</button>
-    <button class="btn num-btn" data-a="d" data-v="5">5</button>
-    <button class="btn num-btn" data-a="d" data-v="6">6</button>
-    <button class="btn op"      data-a="op" data-o="−">−</button>
-
-    <!-- Row 4 -->
-    <button class="btn num-btn" data-a="d" data-v="1">1</button>
-    <button class="btn num-btn" data-a="d" data-v="2">2</button>
-    <button class="btn num-btn" data-a="d" data-v="3">3</button>
-    <button class="btn op"      data-a="op" data-o="+">+</button>
-
-    <!-- Row 5 -->
-    <button class="btn num-btn zero" data-a="d" data-v="0">0</button>
-    <button class="btn fn"           data-a="dot">.</button>
-    <button class="btn eq"           data-a="eq">=</button>
+  <div class="display">
+    <div class="expr" id="expr"></div>
+    <button class="res" id="res" title="Click to copy">0</button>
+  </div>
+  <div class="keys">
+    <div class="grid g5 sci" id="scig" hidden></div>
+    <div class="grid g4" id="mem"></div>
+    <div class="grid g4" id="main"></div>
+    <div class="hist" id="hist" hidden>
+      <ul id="hl"></ul>
+      <button class="chip" id="hclr">Clear history</button>
+    </div>
   </div>
 </div>
 
-<!-- ── STEP 9: JavaScript logic ────────────────────────── -->
 <script>
 (function () {
+  "use strict";
+  var S = { expr: "", done: false, ans: null, lastExpr: "", deg: true, mem: 0, hasMem: false, err: "", last: "0", hist: [] };
+  var $ = function (id) { return document.getElementById(id); };
+  var FN = /^(asin|acos|atan|sin|cos|tan|ln|log|sqrt|cbrt|abs|ans|e)/;
 
-  // --- 9a. State variables ---
-  let cur   = '0';    // what's currently on screen
-  let prev  = '';     // number saved before an operator
-  let op    = null;   // the pending operator (÷ × − +)
-  let fresh = false;  // true = next digit starts a new number
-
-  const D = document.getElementById('disp');
-  const E = document.getElementById('expr');
-
-  // --- 9b. Format number (avoid long floats) ---
+  /* ---------- number formatting ---------- */
   function fmt(n) {
-    const s = parseFloat(n.toPrecision(12)).toString();
-    return s.length > 13 ? parseFloat(n.toPrecision(9)).toString() : s;
+    if (!isFinite(n)) throw new Error("Result is undefined");
+    if (n === 0) return "0";
+    var a = Math.abs(n), s;
+    if (a >= 1e15 || a < 1e-9) s = n.toExponential(8).replace(/\.?0+e/, "e");
+    else s = String(parseFloat(n.toPrecision(12)));
+    return s.replace("e", "E");
   }
 
-  // --- 9c. Update the display ---
-  function show() {
-    D.textContent = cur.length > 13
-      ? parseFloat(parseFloat(cur).toPrecision(9)).toString()
-      : cur;
-  }
-
-  // --- 9d. Compute result ---
-  function calc() {
-    const a = parseFloat(prev), b = parseFloat(cur);
-    if (isNaN(a) || isNaN(b)) return;
-
-    let r;
-    if      (op === '÷') { r = b === 0 ? 'Error' : a / b; }
-    else if (op === '×') { r = a * b; }
-    else if (op === '−') { r = a - b; }
-    else                  { r = a + b; }
-
-    E.textContent = `${prev} ${op} ${cur} =`;  // show full expression
-    cur = r === 'Error' ? 'Error' : fmt(r);
-    prev = ''; op = null; fresh = true;
-    show();
-  }
-
-  // --- 9e. Append a digit ---
-  function digit(v) {
-    if (cur === 'Error') cur = '0';
-    if (fresh)                   { cur = v; fresh = false; }
-    else if (cur === '0' && v !== '.') { cur = v; }       // replace leading zero
-    else if (cur.length < 15)   { cur += v; }             // max 15 chars
-    show();
-  }
-
-  // --- 9f. Set an operator ---
-  function setOp(o) {
-    if (op && !fresh) calc();   // chain: 3 + 5 × → evaluate 3+5 first
-    if (cur === 'Error') return;
-    prev = cur; op = o; fresh = true;
-    E.textContent = `${prev} ${op}`;
-  }
-
-  // --- 9g. Wire up button clicks ---
-  document.querySelectorAll('.btn').forEach(b => {
-    b.addEventListener('click', () => {
-      const a = b.dataset.a;
-      if      (a === 'd')     digit(b.dataset.v);
-      else if (a === 'op')    setOp(b.dataset.o);
-      else if (a === 'eq')    { if (op) calc(); }
-      else if (a === 'clear') { cur='0'; prev=''; op=null; fresh=false; E.textContent=''; show(); }
-      else if (a === 'sign')  { if (cur !== '0' && cur !== 'Error') cur = cur.startsWith('-') ? cur.slice(1) : '-' + cur; show(); }
-      else if (a === 'pct')   { if (cur !== 'Error') cur = fmt(parseFloat(cur) / 100); show(); }
-      else if (a === 'dot')   { if (fresh) { cur='0.'; fresh=false; } else if (!cur.includes('.')) cur += '.'; show(); }
-    });
-  });
-
-  // --- 9h. Keyboard support ---
-  document.addEventListener('keydown', e => {
-    if (e.key >= '0' && e.key <= '9') digit(e.key);
-    else if (e.key === '.')           digit('.');
-    else if (e.key === '+')           setOp('+');
-    else if (e.key === '-')           setOp('−');
-    else if (e.key === '*')           setOp('×');
-    else if (e.key === '/') { e.preventDefault(); setOp('÷'); }
-    else if (e.key === 'Enter' || e.key === '=') { if (op) calc(); }
-    else if (e.key === 'Backspace') {
-      if (!fresh && cur !== 'Error') { cur = cur.length > 1 ? cur.slice(0, -1) : '0'; show(); }
+  /* ---------- tokenizer + parser (no eval) ---------- */
+  function tokenize(s) {
+    var t = [], i = 0, m, c, rest;
+    while (i < s.length) {
+      c = s[i]; rest = s.slice(i);
+      if (c === " ") { i++; continue; }
+      if ((m = /^(\d+\.?\d*|\.\d+)(E[+-]\d+)?/.exec(rest))) { t.push({ t: "n", v: parseFloat(m[0]) }); i += m[0].length; continue; }
+      if ((m = FN.exec(rest))) {
+        t.push({ t: m[0] === "e" ? "c" : m[0] === "ans" ? "c" : "f", v: m[0] }); i += m[0].length; continue;
+      }
+      if (c === "π") { t.push({ t: "c", v: "π" }); i++; continue; }
+      if (c === "(" || c === ")") { t.push({ t: c }); i++; continue; }
+      if ("+−-×*÷/^!%".indexOf(c) > -1) {
+        t.push({ t: "op", v: c === "-" ? "−" : c === "*" ? "×" : c === "/" ? "÷" : c }); i++; continue;
+      }
+      throw new Error("Syntax error");
     }
-    else if (e.key === 'Escape') { cur='0'; prev=''; op=null; fresh=false; E.textContent=''; show(); }
+    return t;
+  }
+
+  function evaluate(src) {
+    var toks = tokenize(src), p = 0, deg = S.deg;
+    function peek() { return toks[p]; }
+    function isOp(v) { var k = toks[p]; return k && k.t === "op" && k.v === v; }
+    function trig(fn, x) { var r = fn(deg ? x * Math.PI / 180 : x); return Math.abs(r) < 1e-14 ? 0 : r; }
+    function inv(fn, x) { var r = fn(x); if (isNaN(r)) throw new Error("Invalid input"); return deg ? r * 180 / Math.PI : r; }
+    function apply(f, x) {
+      switch (f) {
+        case "sin": return trig(Math.sin, x);
+        case "cos": return trig(Math.cos, x);
+        case "tan":
+          if (deg && Math.abs(x % 180) === 90) throw new Error("Tangent is undefined here");
+          return trig(Math.tan, x);
+        case "asin": return inv(Math.asin, x);
+        case "acos": return inv(Math.acos, x);
+        case "atan": return inv(Math.atan, x);
+        case "ln": if (x <= 0) throw new Error("Invalid input"); return Math.log(x);
+        case "log": if (x <= 0) throw new Error("Invalid input"); return Math.log10(x);
+        case "sqrt": if (x < 0) throw new Error("Invalid input"); return Math.sqrt(x);
+        case "cbrt": return Math.cbrt(x);
+        case "abs": return Math.abs(x);
+      }
+      throw new Error("Syntax error");
+    }
+    function fact(x) {
+      if (x < 0 || Math.floor(x) !== x || x > 170) throw new Error("Factorial needs an integer from 0 to 170");
+      var r = 1; for (var k = 2; k <= x; k++) r *= k; return r;
+    }
+    function expr() {
+      var v = term();
+      while (isOp("+") || isOp("−")) { var o = toks[p++].v, r = term(); v = o === "+" ? v + r : v - r; }
+      return v;
+    }
+    function term() {
+      var v = unary(), k;
+      for (;;) {
+        k = peek();
+        if (!k) break;
+        if (k.t === "op" && (k.v === "×" || k.v === "÷")) {
+          p++; var r = unary();
+          if (k.v === "÷") { if (r === 0) throw new Error("Can’t divide by zero"); v /= r; } else v *= r;
+        } else if (k.t === "n" || k.t === "c" || k.t === "f" || k.t === "(") { v *= unary(); }
+        else break;
+      }
+      return v;
+    }
+    function unary() {
+      if (isOp("−")) { p++; return -unary(); }
+      if (isOp("+")) { p++; return unary(); }
+      return power();
+    }
+    function power() {
+      var b = postfix();
+      if (isOp("^")) { p++; var x = unary(), r = Math.pow(b, x); if (isNaN(r)) throw new Error("Invalid input"); return r; }
+      return b;
+    }
+    function postfix() {
+      var v = primary();
+      while (isOp("!") || isOp("%")) { v = toks[p++].v === "!" ? fact(v) : v / 100; }
+      return v;
+    }
+    function primary() {
+      var k = toks[p++];
+      if (!k) throw new Error("Incomplete expression");
+      if (k.t === "n") return k.v;
+      if (k.t === "c") return k.v === "π" ? Math.PI : k.v === "e" ? Math.E : (S.ans === null ? 0 : S.ans);
+      if (k.t === "(") { var v = expr(); if (peek() && peek().t === ")") p++; return v; }
+      if (k.t === "f") {
+        if (!peek() || peek().t !== "(") throw new Error("Syntax error");
+        p++; var a = expr(); if (peek() && peek().t === ")") p++;
+        return apply(k.v, a);
+      }
+      throw new Error("Syntax error");
+    }
+    var res = expr();
+    if (p < toks.length) throw new Error("Syntax error");
+    if (!isFinite(res)) throw new Error("Result is undefined");
+    return res;
+  }
+
+  function tryEval(s) {
+    s = s.replace(/[+−×÷^]+$/, "");
+    if (!s) return null;
+    try { return evaluate(s); } catch (e) { return null; }
+  }
+
+  /* ---------- state helpers ---------- */
+  function begin(cont) {
+    S.err = "";
+    if (S.done) { if (!cont) S.expr = ""; S.done = false; }
+  }
+  function currentValue() {
+    if (S.done) return S.ans;
+    return tryEval(S.expr);
+  }
+  function save() {
+    try { localStorage.setItem("calc-history", JSON.stringify(S.hist)); } catch (e) {}
+  }
+  function pushHist(e, r) {
+    S.hist.unshift({ e: e, r: r });
+    if (S.hist.length > 40) S.hist.length = 40;
+    save();
+  }
+
+  /* ---------- actions ---------- */
+  function act(type, val) {
+    var last = S.expr.slice(-1), m;
+    switch (type) {
+      case "d":
+        begin(false);
+        if (/(^|[^\d.])0$/.test(S.expr)) S.expr = S.expr.slice(0, -1);
+        S.expr += val; break;
+      case "dot":
+        begin(false);
+        m = /[\d.]*$/.exec(S.expr)[0];
+        if (m.indexOf(".") > -1) break;
+        S.expr += m === "" ? "0." : "."; break;
+      case "op":
+        if (!S.expr && !S.done && val !== "−" && S.ans === null) break;
+        begin(true);
+        if (!S.expr) { S.expr = val === "−" ? "−" : (S.ans === null ? "0" : fmt(S.ans).replace(/^-/, "−")) + val; break; }
+        if (/[+−×÷^]$/.test(S.expr)) {
+          if (val === "−" && /[×÷^]$/.test(S.expr)) { S.expr += val; break; }
+          S.expr = S.expr.replace(/[+−×÷^]+$/, "") + val; break;
+        }
+        if (last === "(" && val !== "−") break;
+        S.expr += val; break;
+      case "ins":
+        begin(false); S.expr += val; break;
+      case "rp":
+        if (S.done) break;
+        var open = (S.expr.match(/\(/g) || []).length, close = (S.expr.match(/\)/g) || []).length;
+        if (open > close && !/[+−×÷^(]$/.test(S.expr)) S.expr += ")"; break;
+      case "post":
+        if (!S.expr || !/[\d.)πe!%s]$/.test(S.expr)) break;
+        begin(true); S.expr += val; break;
+      case "sq":
+        if (!S.expr || !/[\d.)πe!%s]$/.test(S.expr)) break;
+        begin(true); S.expr += "^2"; break;
+      case "rec":
+        if (!S.expr) break;
+        begin(true); S.expr = "1÷(" + S.expr + ")"; break;
+      case "pm":
+        begin(true);
+        m = /(\d+\.?\d*|\.\d+)$/.exec(S.expr);
+        if (!m) { S.expr += "(−"; break; }
+        var head = S.expr.slice(0, m.index);
+        S.expr = /\(−$/.test(head) ? head.slice(0, -2) + m[0] : head + "(−" + m[0];
+        break;
+      case "bk":
+        if (S.done) { S.expr = ""; S.done = false; S.err = ""; break; }
+        S.err = "";
+        S.expr = /(asin|acos|atan|sin|cos|tan|ln|log|sqrt|cbrt|abs)\($/.test(S.expr)
+          ? S.expr.replace(/(asin|acos|atan|sin|cos|tan|ln|log|sqrt|cbrt|abs)\($/, "")
+          : /Ans$/.test(S.expr) ? S.expr.slice(0, -3) : S.expr.slice(0, -1);
+        break;
+      case "ac":
+        S.expr = ""; S.done = false; S.err = ""; S.last = "0"; S.lastExpr = ""; break;
+      case "eq":
+        if (!S.expr || S.done) break;
+        try {
+          var r = fmt(evaluate(S.expr));
+          pushHist(S.expr, r);
+          S.lastExpr = S.expr; S.ans = parseFloat(r.replace("E", "e"));
+          S.expr = r.replace(/^-/, "−"); S.done = true; S.err = "";
+        } catch (e) { S.err = e.message; }
+        break;
+      case "mc": S.mem = 0; S.hasMem = false; break;
+      case "mr":
+        if (!S.hasMem) break;
+        begin(false); S.expr += S.mem < 0 ? "(−" + fmt(-S.mem).replace("E", "E") + ")" : fmt(S.mem); break;
+      case "mp": case "mm":
+        var v = currentValue();
+        if (v === null) break;
+        S.mem += type === "mp" ? v : -v; S.hasMem = true; break;
+    }
+    render();
+  }
+
+  /* ---------- rendering ---------- */
+  var elE = $("expr"), elR = $("res");
+  function render() {
+    var pure = /^[\d.]*$/.test(S.expr), text, cls = "res";
+    elE.textContent = S.err ? S.expr : S.done ? S.lastExpr + " =" : (pure ? "" : S.expr);
+    if (S.err) { text = S.err; cls += " err"; }
+    else if (S.done) text = S.expr;
+    else if (pure) { text = S.expr || "0"; }
+    else {
+      var v = tryEval(S.expr);
+      if (v !== null) { try { S.last = fmt(v); } catch (e) {} }
+      text = S.last; cls += " pre";
+    }
+    elR.className = cls;
+    elR.textContent = text;
+    elR.style.fontSize = S.err ? "" : (text.length > 22 ? "18px" : text.length > 16 ? "24px" : text.length > 11 ? "31px" : "");
+    elE.scrollLeft = elE.scrollWidth;
+    $("mind").textContent = S.hasMem ? "M" : "";
+    $("deg").textContent = S.deg ? "DEG" : "RAD";
+    renderHist();
+  }
+
+  function renderHist() {
+    var ul = $("hl"); ul.innerHTML = "";
+    if (!S.hist.length) {
+      var li0 = document.createElement("li"); li0.className = "empty";
+      li0.textContent = "No calculations yet. Press = to save one here.";
+      ul.appendChild(li0); return;
+    }
+    S.hist.forEach(function (h) {
+      var li = document.createElement("li"), b = document.createElement("button");
+      var s = document.createElement("small"), r = document.createElement("b");
+      s.textContent = h.e + " ="; r.textContent = h.r;
+      b.appendChild(s); b.appendChild(r);
+      b.addEventListener("click", function () {
+        S.expr = h.e; S.done = false; S.err = ""; toggleHist(false); render();
+      });
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+
+  /* ---------- build buttons ---------- */
+  function build(id, defs) {
+    var host = $(id);
+    defs.forEach(function (d) {
+      var b = document.createElement("button");
+      b.className = "btn" + (d[3] ? " " + d[3] : "");
+      b.textContent = d[0]; b.type = "button";
+      if (d[4]) b.setAttribute("aria-label", d[4]);
+      b.addEventListener("click", function () { act(d[1], d[2]); b.blur(); });
+      host.appendChild(b);
+    });
+  }
+  build("scig", [
+    ["sin","ins","sin("],["cos","ins","cos("],["tan","ins","tan("],["ln","ins","ln("],["log","ins","log("],
+    ["sin⁻¹","ins","asin(","","Inverse sine"],["cos⁻¹","ins","acos(","","Inverse cosine"],["tan⁻¹","ins","atan(","","Inverse tangent"],["√","ins","sqrt(","","Square root"],["∛","ins","cbrt(","","Cube root"],
+    ["x²","sq","","","Square"],["xʸ","op","^","o","Power"],["n!","post","!","","Factorial"],["1/x","rec","","","Reciprocal"],["|x|","ins","abs(","","Absolute value"],
+    ["π","ins","π"],["e","ins","e"],["Ans","ins","Ans"],["10ˣ","ins","10^(","","Ten to the power"],["eˣ","ins","e^(","","e to the power"]
+  ]);
+  build("mem", [["MC","mc","","m","Clear memory"],["MR","mr","","m","Recall memory"],["M+","mp","","m","Add to memory"],["M−","mm","","m","Subtract from memory"]]);
+  build("main", [
+    ["AC","ac","","c","All clear"],["⌫","bk","","f","Backspace"],["(","ins","(","f","Open parenthesis"],[")","rp","","f","Close parenthesis"],
+    ["7","d","7"],["8","d","8"],["9","d","9"],["÷","op","÷","o","Divide"],
+    ["4","d","4"],["5","d","5"],["6","d","6"],["×","op","×","o","Multiply"],
+    ["1","d","1"],["2","d","2"],["3","d","3"],["−","op","−","o","Subtract"],
+    ["0","d","0"],[".","dot"],["%","post","%","f","Percent"],["+","op","+","o","Add"],
+    ["±","pm","","f","Change sign"],["=","eq","","e","Equals"]
+  ]);
+
+  /* ---------- toolbar ---------- */
+  function toggleHist(on) {
+    $("hist").hidden = !on; $("hbtn").setAttribute("aria-pressed", String(on));
+  }
+  $("hbtn").addEventListener("click", function () { toggleHist($("hist").hidden); });
+  $("hclr").addEventListener("click", function () { S.hist = []; save(); render(); });
+  $("sci").addEventListener("click", function () {
+    var show = $("scig").hidden; $("scig").hidden = !show; this.setAttribute("aria-pressed", String(show));
+  });
+  $("deg").addEventListener("click", function () { S.deg = !S.deg; render(); });
+  $("theme").addEventListener("click", function () {
+    var root = document.documentElement, cur = root.getAttribute("data-theme");
+    if (!cur) cur = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var nxt = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", nxt);
+    try { localStorage.setItem("calc-theme", nxt); } catch (e) {}
+  });
+  elR.addEventListener("click", function () {
+    if (S.err) return;
+    var txt = elR.textContent, old = elE.textContent;
+    function note(m) { elE.textContent = m; setTimeout(render, 900); }
+    try { navigator.clipboard.writeText(txt).then(function () { note("Copied"); }, function () { note("Copy not available here"); }); }
+    catch (e) { note("Copy not available here"); }
   });
 
+  /* ---------- keyboard ---------- */
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key, h = true;
+    if (/^[0-9]$/.test(k)) act("d", k);
+    else if (k === ".") act("dot");
+    else if (k === "+") act("op", "+");
+    else if (k === "-") act("op", "−");
+    else if (k === "*" || k === "x") act("op", "×");
+    else if (k === "/") act("op", "÷");
+    else if (k === "^") act("op", "^");
+    else if (k === "(") act("ins", "(");
+    else if (k === ")") act("rp");
+    else if (k === "!") act("post", "!");
+    else if (k === "%") act("post", "%");
+    else if (k === "p") act("ins", "π");
+    else if (k === "Enter" || k === "=") act("eq");
+    else if (k === "Backspace") act("bk");
+    else if (k === "Escape" || k === "Delete") act("ac");
+    else h = false;
+    if (h) e.preventDefault();
+  });
+
+  /* ---------- restore saved data ---------- */
+  try {
+    var th = localStorage.getItem("calc-theme");
+    if (th === "dark" || th === "light") document.documentElement.setAttribute("data-theme", th);
+    var h = JSON.parse(localStorage.getItem("calc-history") || "[]");
+    if (Array.isArray(h)) S.hist = h.filter(function (x) { return x && typeof x.e === "string" && typeof x.r === "string"; }).slice(0, 40);
+  } catch (e) {}
+  render();
 })();
 </script>
 </body>
 </html>
+
